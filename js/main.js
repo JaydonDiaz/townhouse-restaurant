@@ -75,6 +75,65 @@
     }
   })();
 
+  /* ---------------- Menu rail: horizontal drag-scroll + arrows ---------------- */
+  (function () {
+    var rail = document.getElementById('menu-rail');
+    var btnLeft = document.getElementById('menu-rail-left');
+    var btnRight = document.getElementById('menu-rail-right');
+    if (!rail) return;
+
+    rail.scrollLeft = 0;
+    window.addEventListener('load', function () { rail.scrollLeft = 0; });
+
+    function step() {
+      var card = rail.querySelector('.menu-ticket');
+      if (!card) return rail.clientWidth * 0.8;
+      var style = getComputedStyle(rail);
+      return card.getBoundingClientRect().width + parseFloat(style.gap || 18);
+    }
+
+    function scrollByAmount(dir) {
+      var target = Math.max(0, Math.min(rail.scrollWidth - rail.clientWidth, rail.scrollLeft + dir * step()));
+      gsap.to(rail, { scrollLeft: target, duration: 0.5, ease: 'power2.out' });
+    }
+
+    function updateArrows() {
+      if (!btnLeft || !btnRight) return;
+      var max = rail.scrollWidth - rail.clientWidth - 2;
+      btnLeft.disabled = rail.scrollLeft <= 2;
+      btnRight.disabled = rail.scrollLeft >= max;
+    }
+
+    if (btnLeft) btnLeft.addEventListener('click', function () { scrollByAmount(-1); });
+    if (btnRight) btnRight.addEventListener('click', function () { scrollByAmount(1); });
+    rail.addEventListener('scroll', updateArrows, { passive: true });
+    window.addEventListener('resize', updateArrows);
+    updateArrows();
+
+    var isDown = false, startX = 0, startScroll = 0, moved = false;
+    rail.addEventListener('pointerdown', function (e) {
+      isDown = true; moved = false;
+      startX = e.clientX;
+      startScroll = rail.scrollLeft;
+      rail.classList.add('is-dragging');
+      rail.setPointerCapture(e.pointerId);
+    });
+    rail.addEventListener('pointermove', function (e) {
+      if (!isDown) return;
+      var dx = e.clientX - startX;
+      if (Math.abs(dx) > 4) moved = true;
+      rail.scrollLeft = startScroll - dx;
+    });
+    function endDrag() {
+      isDown = false;
+      rail.classList.remove('is-dragging');
+    }
+    rail.addEventListener('pointerup', endDrag);
+    rail.addEventListener('pointercancel', endDrag);
+    rail.addEventListener('pointerleave', endDrag);
+    rail.addEventListener('click', function (e) { if (moved) e.preventDefault(); }, true);
+  })();
+
   /* ---------------- Reader board: flip-letter marquee sign ---------------- */
   (function () {
     var row0 = document.getElementById('board-row-0');
